@@ -28,6 +28,7 @@ def process_image_repeatedly(framerate, duration, url):
         KeyboardInterrupt: If the processing is interrupted by the user.
     """
     stats = {}
+    timing_breakdown = {'network': [], 'yolo': [], 'client': []}
     start_time = time.time()
 
     # Replace with your server URL
@@ -76,18 +77,21 @@ def process_image_repeatedly(framerate, duration, url):
             # Send frame to the server
             files = {'frames': ('frame.jpg', frame_bytes.getvalue(), 'image/jpeg')}
             response = requests.post(url, files=files)
-            print(f"Response: {response.text}")
-            bounding_boxes = response.json()
+            # Commented to avoid considering time for printing response
+            """ print(f"Response: {response.text}")
+            bounding_boxes = response.json() """
             frame_count += 1
 
             # Draw bounding boxes on the compressed frame
-            for bbox in bounding_boxes[0]:
+            # Commented to avoid considering time for drawing boxes
+            """ for bbox in bounding_boxes[0]:
                 cv2.rectangle(compressed_frame, (bbox['xmin'], bbox['ymin']), (bbox['xmax'], bbox['ymax']), (0, 255, 0), 2)
                 cv2.putText(compressed_frame, f"{bbox['name']} {bbox['confidence']:.2f}", (bbox['xmin'], bbox['ymin'] - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) """
 
             # Save the processed compressed image
-            cv2.imwrite(output_image_path, compressed_frame)
+            # Commented to avoid considering time for saving image
+            """ cv2.imwrite(output_image_path, compressed_frame) """
 
             after = time.time()
             if str(round(after)) not in stats:

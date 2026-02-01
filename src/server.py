@@ -1,8 +1,16 @@
 from flask import Flask, request, jsonify
 import cv2
 import numpy as np
+import time
 
 app = Flask(__name__)
+
+cv2.setNumThreads(2)  # Limita a 2 thread OpenCV
+cv2.setNumThreads(0)  # 0 = auto (usa tutti i core)
+
+# Verifica quanti thread sta usando
+print(f"OpenCV threads: {cv2.getNumThreads()}")
+print(f"Build info: {cv2.getBuildInformation()}")
 
 # Load YOLO model and configure
 net = cv2.dnn.readNetFromDarknet('yolov3.cfg', 'yolov3.weights')
@@ -40,7 +48,6 @@ def detect_objects(frame):
 
     # Non-maxima suppression to remove overlapping boxes
     # indices = cv2.dnn.NMSBoxes(boxes, confidences, score_threshold=0.5, nms_threshold=0.4)
-
     # # Prepare results in JSON format
     # results = []
     # for i in indices:
@@ -76,9 +83,21 @@ def process_frames():
         img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
 
         # Perform object detection
-        detections = detect_objects(img)
+        """ detections = detect_objects(img)
+        results.append(detections) """
 
-        results.append(detections)
+        # Measure ONLY YOLO processing time
+        yolo_start = time.time()
+        detections = detect_objects(img)
+        yolo_time = time.time() - yolo_start
+        
+        results.append({
+            'detections': detections,
+            'yolo_processing_time': yolo_time
+        })
+
+         # Print detections for debugging
+        print(f'Detections: {detections}')
 
     return jsonify(results), 200
 

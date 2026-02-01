@@ -28,6 +28,7 @@ def process_image_repeatedly(framerate, duration, url):
         KeyboardInterrupt: If the processing is interrupted by the user.
     """
     stats = {}
+    timing_breakdown = {'network': [], 'yolo': [], 'client': []}
     start_time = time.time()
 
     # Replace with your server URL
@@ -65,60 +66,74 @@ def process_image_repeatedly(framerate, duration, url):
     frame_count = 0
     try:
         while True:
-            if frame_count == tot_frame:
+            if frame_count == tot_frame or int(time.time() - start_time) > duration:
                 raise KeyboardInterrupt
             
-            before = time.time()
-
-            if int(before - start_time) > duration:
-                raise KeyboardInterrupt
-
+            # Timing rete + YOLO
+            before_request = time.time()
             # Send frame to the server
             files = {'frames': ('frame.jpg', frame_bytes.getvalue(), 'image/jpeg')}
             response = requests.post(url, files=files)
-            print(f"Response: {response.text}")
-            bounding_boxes = response.json()
+            network_time = time.time() - before_request
+            
+            response_data = response.json()
+            """ yolo_time = response_data[0]['yolo_processing_time'] """
+            yolo_time = 0
+            """ detections = response_data[0]['detections'] """
+            detections = response_data[0]
+            
+            # Timing client-side
+            before_client = time.time()
+            
+            # Disegna SOLO se necessario
+            if frame_count % 10000 == 0:
+                for bbox in detections:
+                    cv2.rectangle(compressed_frame, (bbox['xmin'], bbox['ymin']), 
+                                  (bbox['xmax'], bbox['ymax']), (0, 255, 0), 2)
+                    cv2.putText(compressed_frame, f"{bbox['name']} {bbox['confidence']:.2f}", 
+                               (bbox['xmin'], bbox['ymin'] - 10),
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                cv2.imwrite(output_image_path, compressed_frame)
+            
+            client_time = time.time() - before_client
+            
+            # Record timing breakdown
+            timing_breakdown['network'].append(network_time)
+            timing_breakdown['yolo'].append(yolo_time)
+            timing_breakdown['client'].append(client_time)
+            
             frame_count += 1
-
-            # Draw bounding boxes on the compressed frame
-            for bbox in bounding_boxes[0]:
-                cv2.rectangle(compressed_frame, (bbox['xmin'], bbox['ymin']), (bbox['xmax'], bbox['ymax']), (0, 255, 0), 2)
-                cv2.putText(compressed_frame, f"{bbox['name']} {bbox['confidence']:.2f}", (bbox['xmin'], bbox['ymin'] - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-            # Save the processed compressed image
-            cv2.imwrite(output_image_path, compressed_frame)
-
+            
+            # Conteggio framerate
             after = time.time()
             if str(round(after)) not in stats:
-                stats[str(round(after))] = 0 
-            stats[str(round(after))] += 1 
-
-            elapsed_time = after - before
+                stats[str(round(after))] = 0
+            stats[str(round(after))] += 1
+            
+            elapsed_time = network_time + yolo_time + client_time
             sleep_time = max(0, interval - elapsed_time)
-
-            # Wait for the next interval
             time.sleep(sleep_time)
 
     except KeyboardInterrupt:
-        print("End processing.")
-        # Print stats
-        print("Stats:", stats)
-        tot_f = 0
-        count = 0
-        for key in stats:
-            tot_f += stats[key]
-            count += 1
-        print(f"Expected framerate: {framerate}\t Measured framerate: {round(tot_f/count, 3)}")
-        # Stampa anche la percentuale della differenza tra espected e measured
-        print(f"Difference: {round(((framerate - (tot_f/count)) / framerate) * 100, 2)}%")
+        print("\n=== Performance Breakdown ===")
+        print(f"Avg Network latency: {np.mean(timing_breakdown['network']):.3f}s")
+        print(f"Avg YOLO processing: {np.mean(timing_breakdown['yolo']):.3f}s")
+        print(f"Avg Client processing: {np.mean(timing_breakdown['client']):.3f}s")
+        print(f"Total average: {np.mean(timing_breakdown['network']) + np.mean(timing_breakdown['yolo']) + np.mean(timing_breakdown['client']):.3f}s")
+        
+        tot_f = sum(stats.values())
+        count = len(stats)
+        measured_fps = tot_f / count if count > 0 else 0
+        print(f"\nExpected FPS: {framerate}")
+        print(f"Measured FPS: {round(measured_fps, 3)}")
+        print(f"Difference: {round(((framerate - measured_fps) / framerate) * 100, 2)}%")
         
         with open("result.dat", 'a') as file1:
-            file1.write(f"{datetime.datetime.now().time()},{framerate},{round(tot_f/count, 3)}\n")
+            file1.write(f"{datetime.datetime.now().time()},{framerate},{round(measured_fps, 3)}\n")
 
 if __name__ == "__main__":
     
     check_and_delete_file("result.dat")
     #for i in range(1, 11):
-    process_image_repeatedly(24, 5, 'http://<ip>:<port>/process_frames')
+    process_image_repeatedly(48, 5, 'http://<ip>:<port>/process_frames')
         #time.sleep(60)
