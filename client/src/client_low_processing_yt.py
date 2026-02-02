@@ -33,7 +33,7 @@ def process_image_repeatedly(framerate, duration, url):
 
     # Replace with your server URL
     #url = 'http://192.168.11.90:32025/process_frames'
-    url = 'http://localhost:5000/process_frames'
+    url = 'http://localhost:30700/process_frames'
 
     # Path to the image file
     image_path = '../img/dog_bike_car.jpg'
