@@ -77,17 +77,14 @@ def process_image_repeatedly(framerate, duration, url):
             network_time = time.time() - before_request
             
             response_data = response.json()
-            """ yolo_time = response_data[0]['yolo_processing_time'] """
-            yolo_time = 0
-            """ detections = response_data[0]['detections'] """
-            detections = response_data[0]
+            yolo_time = response_data[0]['yolo_processing_time']
+            detections = response_data[0]['detections']
             
             # Timing client-side
             before_client = time.time()
             
             # Draw boxes only every X frames
             if frame_count % 10000 == 0:
-                print(f"Response: {response_data}")
                 for bbox in detections:
                     cv2.rectangle(compressed_frame, (bbox['xmin'], bbox['ymin']), 
                                   (bbox['xmax'], bbox['ymax']), (0, 255, 0), 2)
@@ -141,5 +138,5 @@ if __name__ == "__main__":
     
     check_and_delete_file("../data/result.dat")
     #for i in range(1, 11):
-    process_image_repeatedly(2, 5, 'http://<ip>:<port>/process_frames')
+    process_image_repeatedly(1, 1, 'http://<ip>:<port>/process_frames')
         #time.sleep(60)

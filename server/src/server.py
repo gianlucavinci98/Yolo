@@ -5,18 +5,21 @@ import time
 
 app = Flask(__name__)
 
-cv2.setNumThreads(2)  # Limita a 2 thread OpenCV
-cv2.setNumThreads(0)  # 0 = auto (usa tutti i core)
+# Limitatori thread per OpenCV
+# cv2.setNumThreads(2)  # Limita a 2 thread OpenCV
+# cv2.setNumThreads(0)  # 0 = auto (usa tutti i core)
 
 # Verifica quanti thread sta usando
-print(f"OpenCV threads: {cv2.getNumThreads()}")
-print(f"Build info: {cv2.getBuildInformation()}")
+# print(f"OpenCV threads: {cv2.getNumThreads()}")
+# print(f"Build info: {cv2.getBuildInformation()}")
 
 # Load YOLO model and configure
 net = cv2.dnn.readNetFromDarknet('../yolo/yolov3.cfg', '../yolo/yolov3.weights')
 
 # Manually specify the output layer indices (YOLOv3 specific)
-output_layers = [82, 94, 106]
+# output_layers = [82, 94, 106]
+layer_names = net.getLayerNames()
+output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
 
 # Function to perform object detection
 def detect_objects(frame):
@@ -28,6 +31,7 @@ def detect_objects(frame):
     boxes = []
     confidences = []
     class_ids = []
+
 
     for output in outputs:
         for detection in output:
@@ -47,24 +51,15 @@ def detect_objects(frame):
                 class_ids.append(class_id)
 
     # Non-maxima suppression to remove overlapping boxes
-    # indices = cv2.dnn.NMSBoxes(boxes, confidences, score_threshold=0.5, nms_threshold=0.4)
-    # # Prepare results in JSON format
-    # results = []
-    # for i in indices:
-    #     i = i[0]
-    #     box = boxes[i]
-    #     x, y, w, h = box
-    #     label = f'Class {class_ids[i]}'
-    #     confidence = confidences[i]
-    #     results.append({'name': label, 'confidence': confidence, 'xmin': x, 'ymin': y, 'xmax': x + w, 'ymax': y + h})
-
+    indices = cv2.dnn.NMSBoxes(boxes, confidences, score_threshold=0.5, nms_threshold=0.4)
     # Prepare results in JSON format
     results = []
-    for i in range(len(boxes)):
-        x, y, w, h = boxes[i]
-        label = f'Class {class_ids[i]}'
-        confidence = confidences[i]
-        results.append({'name': label, 'confidence': confidence, 'xmin': x, 'ymin': y, 'xmax': x + w, 'ymax': y + h})
+    if len(indices) > 0:
+        for i in indices.flatten():
+            x, y, w, h = boxes[i]
+            label = f'Class {class_ids[i]}'
+            confidence = confidences[i]
+            results.append({'name': label, 'confidence': confidence, 'xmin': x, 'ymin': y, 'xmax': x + w, 'ymax': y + h})
 
     return results
 
@@ -79,7 +74,7 @@ def process_frames():
     results = []
     for frame in frames:
         # Convert frame to numpy array
-        npimg = np.fromstring(frame.read(), np.uint8)
+        npimg = np.frombuffer(frame.read(), np.uint8)
         img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
 
         # Perform object detection
@@ -95,9 +90,6 @@ def process_frames():
             'detections': detections,
             'yolo_processing_time': yolo_time
         })
-
-         # Print detections for debugging
-        print(f'Detections: {detections}')
 
     return jsonify(results), 200
 

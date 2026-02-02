@@ -1,6 +1,5 @@
 # YOLOv3 Model Files
 yolov3.weights
-yolov3.cfg
 
 # Python
 __pycache__/
