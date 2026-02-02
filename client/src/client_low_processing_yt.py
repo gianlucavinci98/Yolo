@@ -13,7 +13,7 @@ def check_and_delete_file(file_path):
     else:
         print(f"File '{file_path}' does not exist.")
         
-    with open("result.dat", 'a') as file1:
+    with open("../data/result.dat", 'a') as file1:
         file1.write(f"Timestamp,Expected framerate,Measured framerate\n")
 
 def process_image_repeatedly(framerate, duration, url):
@@ -85,8 +85,9 @@ def process_image_repeatedly(framerate, duration, url):
             # Timing client-side
             before_client = time.time()
             
-            # Disegna SOLO se necessario
+            # Draw boxes only every X frames
             if frame_count % 10000 == 0:
+                print(f"Response: {response_data}")
                 for bbox in detections:
                     cv2.rectangle(compressed_frame, (bbox['xmin'], bbox['ymin']), 
                                   (bbox['xmax'], bbox['ymax']), (0, 255, 0), 2)
@@ -104,7 +105,7 @@ def process_image_repeatedly(framerate, duration, url):
             
             frame_count += 1
             
-            # Conteggio framerate
+            # Count framerate
             after = time.time()
             if str(round(after)) not in stats:
                 stats[str(round(after))] = 0
@@ -128,12 +129,17 @@ def process_image_repeatedly(framerate, duration, url):
         print(f"Measured FPS: {round(measured_fps, 3)}")
         print(f"Difference: {round(((framerate - measured_fps) / framerate) * 100, 2)}%")
         
-        with open("result.dat", 'a') as file1:
+        with open("../data/result.dat", 'a') as file1:
             file1.write(f"{datetime.datetime.now().time()},{framerate},{round(measured_fps, 3)}\n")
+
+        with open("../data/stats.dat", 'w') as stats_file:
+            stats_file.write("Timestamp,Frame count\n")
+            for key in stats:
+                stats_file.write(f"{key},{stats[key]}\n")
 
 if __name__ == "__main__":
     
-    check_and_delete_file("result.dat")
+    check_and_delete_file("../data/result.dat")
     #for i in range(1, 11):
-    process_image_repeatedly(48, 5, 'http://<ip>:<port>/process_frames')
+    process_image_repeatedly(2, 5, 'http://<ip>:<port>/process_frames')
         #time.sleep(60)

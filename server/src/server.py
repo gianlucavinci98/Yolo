@@ -13,7 +13,7 @@ print(f"OpenCV threads: {cv2.getNumThreads()}")
 print(f"Build info: {cv2.getBuildInformation()}")
 
 # Load YOLO model and configure
-net = cv2.dnn.readNetFromDarknet('yolov3.cfg', 'yolov3.weights')
+net = cv2.dnn.readNetFromDarknet('../yolo/yolov3.cfg', '../yolo/yolov3.weights')
 
 # Manually specify the output layer indices (YOLOv3 specific)
 output_layers = [82, 94, 106]

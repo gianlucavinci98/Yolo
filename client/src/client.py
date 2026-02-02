@@ -13,7 +13,7 @@ def check_and_delete_file(file_path):
     else:
         print(f"File '{file_path}' does not exist.")
         
-    with open("result.dat", 'a') as file1:
+    with open("../data/result.dat", 'a') as file1:
         file1.write(f"Timestamp,Expected framerate,Measured framerate\n")
 
 def process_image_repeatedly(framerate, duration, url):
@@ -113,12 +113,12 @@ def process_image_repeatedly(framerate, duration, url):
         # Stampa anche la percentuale della differenza tra espected e measured
         print(f"Difference: {round(((framerate - (tot_f/count)) / framerate) * 100, 2)}%")
         
-        with open("result.dat", 'a') as file1:
+        with open("../data/result.dat", 'a') as file1:
             file1.write(f"{datetime.datetime.now().time()},{framerate},{round(tot_f/count, 3)}\n")
 
 if __name__ == "__main__":
     
-    check_and_delete_file("result.dat")
+    check_and_delete_file("../data/result.dat")
     #for i in range(1, 11):
     process_image_repeatedly(24, 5, 'http://<ip>:<port>/process_frames')
         #time.sleep(60)
