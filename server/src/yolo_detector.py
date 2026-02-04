@@ -9,7 +9,6 @@ from ray import serve
 )
 class YoloDetector:
     def __init__(self):
-        # Carichiamo i pesi una volta sola all'avvio
         self.net = cv2.dnn.readNetFromDarknet('../yolo/yolov3.cfg', '../yolo/yolov3.weights')
         self.layer_names = self.net.getLayerNames()
         self.output_layers = [self.layer_names[i - 1] for i in self.net.getUnconnectedOutLayers()]
@@ -52,8 +51,5 @@ class YoloDetector:
                 label = f'Class {class_ids[i]}'
                 confidence = confidences[i]
                 results.append({'name': label, 'confidence': confidence, 'xmin': x, 'ymin': y, 'xmax': x + w, 'ymax': y + h})
-
-        # Stampa results for debugging
-        print("Detection results:", results)
         
         return results

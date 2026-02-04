@@ -1,20 +1,57 @@
-# How to use
+# Yolo + Ray Serve
 
-In the k8s folder contains all the files to deploy the Yolo network. Two different versions of the Yolo network are available, namely stegala/yolo-server:tiny and stegala/yolo-server:reg to be specified as an image.
+This project exposes a YOLO inference pipeline through Ray Serve. The HTTP ingress receives a multipart form with a single file field named `frames`, decodes it, runs detection, and returns JSON.
 
-The client is in the src folder. Can be executed as 
+## Repository layout
 
-```
-python3 client.py
-```
+- [server/src](server/src) contains Ray Serve deployments (`ingress.py`, `image_decoder.py`, `yolo_detector.py`) and the app entrypoint (`main_service.py`).
+- [server/requirements.txt](server/requirements.txt) contains server dependencies.
+- [client/src](client/src) contains the test client.
+- [k8s](k8s) contains Kubernetes manifests and image references.
 
-The main function is
+## Server setup (local)
 
-```
-process_image_repeatedly(20, 600, 'http://ip:port/process_frames')
-```
+Install dependencies from the server folder, then start Ray Serve:
 
-which requires as argument the framerate (fps), the duration (in seconds) of the test, and the URL of the server (replace it the IP and the port of the server).
+- Install: `pip install -r server/requirements.txt`
+- Run: `serve run main_service:app`
 
-The script will the generate a 'result.dat' file containing information on the excpected framerate and the measured framerate computed as the average throughout the test. 
+The Ray Serve HTTP endpoint is the default Serve address (e.g. `http://127.0.0.1:8000`).
+
+## HTTP endpoint
+
+Send a `multipart/form-data` request with a single file field named `frames`:
+
+- Endpoint: `/`
+- Method: `POST`
+- Body: `form-data` with key `frames` (type **File**)
+
+The response is JSON containing detections and timing information.
+
+## Client
+
+From [client/src](client/src):
+
+- Run: `python3 client.py`
+
+The main function is:
+
+`process_image_repeatedly(20, 600, 'http://ip:port/')`
+
+Arguments:
+
+- fps (target framerate)
+- duration (seconds)
+- server URL (Ray Serve ingress)
+
+The client writes a `result.dat` file with expected and measured framerate.
+
+## Kubernetes
+
+Manifests are under [k8s](k8s). Two images are available:
+
+- `stegala/yolo-server:tiny`
+- `stegala/yolo-server:reg`
+
+Update the image in the manifests before deploying.
 
