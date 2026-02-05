@@ -17,6 +17,7 @@ class YoloIngress:
         self.logger.info("Ingress initialized - Logger configurato correttamente")
 
     async def __call__(self, http_request: Request):
+        total_start = time.time()
         self.logger.info(
             "Incoming request: method=%s content_type=%s",
             http_request.method,
@@ -53,4 +54,8 @@ class YoloIngress:
                 'detections': ref_result.get('detections', [])
             })
 
-        return JSONResponse(results)
+        total_time = time.time() - total_start
+        return JSONResponse({
+            'total_processing_time': total_time,
+            'results': results
+        })

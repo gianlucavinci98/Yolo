@@ -1,22 +1,23 @@
-# Use an official Python runtime as a parent image
+# Base image
 FROM python:3.9-slim
 
-# Set the working directory in the container
+# Install build essentials only if needed by requirements
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
+# Install dependencies
 COPY requirements.txt /app/requirements.txt
-
-# Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy application code and model files
 COPY src /app/src
 COPY yolo /app/yolo
+COPY serve_config.yaml /app/serve_config.yaml
 
-# Make port 5000 available to the world outside this container
-EXPOSE 5000
+# Ray Serve default HTTP port
+EXPOSE 8000
+EXPOSE 8265
 
 WORKDIR /app/src
-# Run server.py when the container launches
-CMD ["python", "server.py"]
+# Start Ray Serve application
+CMD ["serve", "run", "main_service:app"]
 
