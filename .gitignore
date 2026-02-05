@@ -41,3 +41,7 @@ Thumbs.db
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+# Ray Serve
+prometheus-*
+server/src/data/

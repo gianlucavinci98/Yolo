@@ -5,17 +5,15 @@ from ray.serve.handle import DeploymentHandle
 import logging
 import time
 
-module_logger = logging.getLogger("ray.serve.ingress")
-
-@serve.deployment(name="YoloIngress")
+@serve.deployment(name="YoloIngress", num_replicas=1, ray_actor_options={"num_cpus": 0.1})
 class YoloIngress:
     def __init__(self, decoder_handle: DeploymentHandle, detector_handle: DeploymentHandle):
         self.decoder = decoder_handle
         self.detector = detector_handle
         
-        self.logger = module_logger
+        self.logger = logging.getLogger("ray.serve.ingress")
         self.logger.setLevel(logging.INFO)
-        self.logger.info("Ingress initialized - Logger configurato correttemente")
+        self.logger.info("Ingress initialized - Logger configurato correttamente")
 
     async def __call__(self, http_request: Request):
         self.logger.info(
