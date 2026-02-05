@@ -59,6 +59,7 @@ class YoloDetector:
 
         # Non-maxima suppression to remove overlapping boxes
         indices = cv2.dnn.NMSBoxes(boxes, confidences, score_threshold=0.5, nms_threshold=0.4)
+        elapsed = time.time() - start
         # Prepare results in JSON format
         results = []
         if len(indices) > 0:
@@ -66,8 +67,8 @@ class YoloDetector:
                 x, y, w, h = boxes[i]
                 label = f'Class {class_ids[i]}'
                 confidence = confidences[i]
-                results.append({'name': label, 'confidence': confidence, 'xmin': x, 'ymin': y, 'xmax': x + w, 'ymax': y + h})
-        elapsed = time.time() - start
+                results.append({'name': label, 'confidence': confidence, 'xmin': x, 'ymin': y, 'xmax': x + w, 'ymax': y + h, 'processing_time': elapsed})
+        
         # Log processing time
         self.logger.info("Detection completed in %.4fs, found %d objects", elapsed, len(results))
         return results
