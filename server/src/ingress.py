@@ -49,7 +49,8 @@ class YoloIngress:
         for idx, ref_result in enumerate(detect_refs):
             results.append({
                 'frame_index': idx,
-                'detections': ref_result
+                'processing_time': ref_result.get('processing_time', 0.0),
+                'detections': ref_result.get('detections', [])
             })
 
         return JSONResponse(results)
