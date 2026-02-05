@@ -1,4 +1,3 @@
-from venv import logger
 import cv2
 import numpy as np
 from ray import serve
