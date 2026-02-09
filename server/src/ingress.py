@@ -31,7 +31,7 @@ class YoloIngress:
             return JSONResponse({'error': 'No frames found'}, status_code=400)
 
 
-        # Leggi tutti i file in parallelo
+        # Read all files in parallel
         read_tasks = [f.read() for f in frames]
         images_bytes = await asyncio.gather(*read_tasks)
         self.logger.info("Received %d frames", len(images_bytes))
