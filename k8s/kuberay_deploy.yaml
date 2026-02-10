@@ -1,0 +1,95 @@
+apiVersion: ray.io/v1
+kind: RayService
+metadata:
+  name: yolo-serve-app
+spec:
+  # Opzioni per il servizio Kubernetes che esporrà l'applicazione
+  serveService:
+    metadata:
+      name: yolo-serve-svc
+    spec:
+      ports:
+        - name: http
+          port: 8000
+          targetPort: 8000
+
+  serviceUnhealthySecondThreshold: 1000
+  deploymentUnhealthySecondThreshold: 1000
+
+  serveConfigV2: |
+    proxy_location: HeadOnly
+    http_options:
+      host: 0.0.0.0
+      port: 8000
+    applications:
+      - name: yolo_app
+        import_path: main_service:app
+        route_prefix: /
+        runtime_env: 
+          working_dir: "/app/src"
+        deployments:
+          - name: ImageDecoder
+            num_replicas: 2
+            ray_actor_options:
+              num_cpus: 0.5
+          - name: YoloDetector
+            num_replicas: 1
+            ray_actor_options:
+              num_cpus: 2.0
+          - name: YoloIngress
+            num_replicas: 1
+            ray_actor_options:
+              num_cpus: 0.1
+
+  rayClusterConfig:
+    rayVersion: "2.6.3"
+
+    # Configurazione del nodo HEAD
+    headGroupSpec:
+      rayStartParams:
+        dashboard-host: "0.0.0.0"
+      template:
+        spec:
+          containers:
+            - name: ray-head
+              image: gianlucavinci98/yolo-server:ray
+              ports:
+                - containerPort: 6379
+                  name: gcs-server
+                - containerPort: 8265
+                  name: dashboard
+                - containerPort: 10001
+                  name: client
+                - containerPort: 8000
+                  name: serve
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: "2Gi"
+                requests:
+                  cpu: "0.5"
+                  memory: "1Gi"
+
+    # Configurazione dei nodi WORKER
+    workerGroupSpecs:
+      - replicas: 2 # Numero di nodi worker
+        minReplicas: 1
+        maxReplicas: 8
+        groupName: cpu-group # O cpu-group se non usi GPU
+        rayStartParams: {}
+        template:
+          spec:
+            containers:
+              - name: ray-worker
+                # IMPORTANTE: Usa l'immagine che hai buildato nel Passo 1
+                image: gianlucavinci98/yolo-server:ray
+                resources:
+                  # Le risorse K8s devono essere sufficienti per coprire le richieste Ray (num_cpus)
+                  # Decoder (3x1) + Detector (1x2) + Ingress (0.1) = ~5.1 CPU totali richieste da Ray
+                  # Con 2 repliche da 4 CPU abbiamo 8 CPU totali -> OK
+                  limits:
+                    cpu: "4"
+                    memory: "6Gi"
+                  requests:
+                    cpu: "2"
+                    memory: "4Gi"
